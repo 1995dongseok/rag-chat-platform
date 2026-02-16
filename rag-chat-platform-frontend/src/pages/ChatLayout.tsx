@@ -1,215 +1,205 @@
-import { useMemo, useState } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import TracePanel from "../features/trace/components/TracePanel";
+import { useChatStore } from "../features/chat/store/chatStore";
+import { useChatActions } from "../features/chat/useChatActions";
+import type { Message } from "../features/chat/types";
+import 'highlight.js/styles/github-dark.css';
+import RagStatus from "../features/chat/components/RagStatus";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 
-type Conversation = { id: string; title: string; updatedAt: string };
-type Message = { id: string; role: "user" | "assistant"; content: string; createdAt: string };
+const CodeBlock = ({ inline, className, children }: any) => {
+  const [copied, setCopied] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
+  const match = /language-(\w+)/.exec(className || '');
 
-export default function ChatLayout() {
-  const [now, setNow] = useState(() => new Date());
+  const onCopy = () => {
+    if (codeRef.current) {
+      navigator.clipboard.writeText(codeRef.current.innerText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000); // 1분마다 갱신
-    return () => clearInterval(t);
-  }, []);
-
-  function formatNow(d: Date) {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
-  }
-
-  const [conversations] = useState<Conversation[]>(
-  Array.from({ length: 50 }, (_, i) => ({
-    id: `c${i + 1}`,
-    title: `테스트 대화 ${i + 1}`,
-    updatedAt: `2026-02-03 ${String(10 + (i % 10)).padStart(2, "0")}:${String(i % 60).padStart(2, "0")}`,
-  }))
-);
-
-  const [activeConversationId, setActiveConversationId] = useState(conversations[0]?.id ?? "");
-  const [messages, setMessages] = useState<Message[]>(
-    Array.from({ length: 30 }, (_, i) => ({
-      id: `m${i + 1}`,
-      role: i % 2 === 0 ? "user" : "assistant",
-      content: `테스트 메시지 ${i + 1}`,
-      createdAt: "now",
-    }))
-  );
-
-  const activeTitle = useMemo(
-    () => conversations.find((c) => c.id === activeConversationId)?.title ?? "New Chat",
-    [activeConversationId, conversations]
-  );
-
-  function onNewChat() {
-    setMessages([]);
-  }
-
-  function onSend(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: "user", content: trimmed, createdAt: "now" },
-    ]);
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "✅ (데모) 서버 연결 전입니다. 나중에 RAG 응답(SSE)로 교체하세요.",
-          createdAt: "now",
-        },
-      ]);
-    }, 250);
+  if (inline || !match) {
+    return <code className="bg-slate-100 px-1 rounded text-indigo-600 font-mono text-sm">{children}</code>;
   }
 
   return (
-    <div className="h-screen overflow-hidden grid grid-cols-[320px_1fr] bg-white text-slate-900">
-      {/* Sidebar */}
-      <aside className="min-h-0 border-r border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
-        <div className="pb-1">
-          <div className="font-bold">rag-chat-platform</div>
-          <div className="text-xs text-slate-400">{formatNow(now)}</div>
-        </div>
-
-        <button
-          onClick={onNewChat}
-          className="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-900 font-semibold">
-          + New Chat
+    <div className="my-4 rounded border border-slate-200 bg-white overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-slate-100 bg-slate-50 text-xs font-mono">
+        <span className="text-slate-500 uppercase">{match[1]}</span>
+        <button onClick={onCopy} className="text-indigo-600 hover:font-bold">
+          {copied ? "COPIED" : "COPY"}
         </button>
+      </div>
+      <pre className="p-4 overflow-auto bg-slate-900">
+        <code ref={codeRef} className={className}>{children}</code>
+      </pre>
+    </div>
+  );
+};
 
-        <div className="text-xs text-slate-400 mt-2">Conversations</div>
+export default function ChatLayout() {
+  const currentLanguage = useChatStore((s) => s.currentLanguage);
+  const setLanguage = useChatStore((s) => s.setLanguage);
+  const currentStyle = useChatStore((s) => (s as any).currentStyle || "Expert"); 
+  const setStyle = useChatStore((s) => (s as any).setStyle);
+  const [activeDropdown, setActiveDropdown] = useState<"lang" | "style" | null>(null);
+  const languages = ["Python", "Java", "C++", "JavaScript", "JSP", "React"];
+  const styles = [
+    { id: "Expert", name: "🧐 수석 개발자" },
+    { id: "Friendly", name: "🌟 친절한 사수" },
+    { id: "Strict", name: "🤖 코드 리뷰어" }
+  ];
+  const [now, setNow] = useState(() => new Date());
+  const menuRef = useRef<HTMLDivElement>(null);
 
-        <nav className="flex-1 flex flex-col gap-2 overflow-auto pr-1">
-          {conversations.map((c) => {
-            const active = c.id === activeConversationId;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setActiveConversationId(c.id)}
-                className={[
-                  "p-3 rounded-xl border text-left transition",
-                  active
-                    ? "border-slate-400 bg-white"
-                    : "border-slate-200 hover:bg-slate-100",
-                ].join(" ")}
-                title={c.title}
-              >
-                <div className="text-sm font-semibold truncate">{c.title}</div>
-                <div className="text-[11px] text-slate-400 mt-1">{c.updatedAt}</div>
-              </button>
-            );
-          })}
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const conversations = useChatStore((s) => s.conversations);
+  const activeId = useChatStore((s) => s.activeId);
+  const setActive = useChatStore((s) => s.setActive);
+  const newChat = useChatStore((s) => s.newChat);
+  const activeConversationId = activeId ?? (conversations[0]?.id ?? null);
+  const activeConversation = useMemo(() => {
+    if (!activeConversationId) return null;
+    return conversations.find((c) => c.id === activeConversationId) ?? null;
+  }, [conversations, activeConversationId]);
+  const activeTitle = activeConversation?.title ?? "New Chat";
+  const messages = activeConversation?.messages ?? [];
+  const { send } = useChatActions();
+
+  async function onSend(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    let cid = activeConversationId;
+    if (!cid) {
+      useChatStore.getState().newChat();
+      cid = useChatStore.getState().activeId;
+      if (!cid) return;
+    }
+    await send(cid, trimmed, currentLanguage, currentStyle);
+  }
+
+  return (
+    <div className="h-screen overflow-hidden grid grid-cols-[320px_1fr_360px] bg-white text-slate-900">
+      <aside className="min-h-0 border-r border-slate-200 bg-slate-50 p-4 flex flex-col gap-3">
+        <div className="font-bold">rag-chat-platform</div>
+        <button onClick={() => newChat()} className="px-3 py-2 rounded-xl border bg-white hover:bg-slate-100 font-semibold">새 채팅</button>
+        <nav className="flex-1 overflow-auto">
+          {conversations.map(c => (
+            <button key={c.id} onClick={() => setActive(c.id)} className={`w-full p-3 mb-2 rounded-xl border text-left ${c.id === activeConversationId ? "bg-white border-slate-400" : "border-slate-200"}`}>
+              <div className="text-sm font-semibold truncate">{c.title}</div>
+            </button>
+          ))}
         </nav>
-
-        <div className="mt-auto flex items-center justify-between gap-3">
-          <div className="text-xs text-slate-400">Guest</div>
-          <button className="text-xs text-indigo-300 hover:text-indigo-200" onClick={() => alert("로그인 연결 전")}>
-            Login (later)
-          </button>
-        </div>
       </aside>
 
-      {/* Main */}
       <main className="min-h-0 overflow-hidden grid grid-rows-[56px_1fr_auto] bg-white">
-        <header className="h-14 px-4 flex items-center justify-between bg-white">
-          <div className="text-sm font-bold">{activeTitle}</div>
-          <button
-            className="text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onClick={() => alert("설정은 나중에")}
-          >
-            Settings (later)
-          </button>
+        <header className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-white">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-700">{activeTitle}</span>
+          </div>
+          <div className="flex items-center gap-3" ref={menuRef}>
+            <div className="relative">
+              <button onClick={() => setActiveDropdown(activeDropdown === "style" ? null : "style")} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm">
+                <span className="text-slate-500 text-[11px] font-bold uppercase">Style:</span>
+                <span className="font-semibold text-slate-700">{styles.find(t => t.id === currentStyle)?.name || "Select"}</span>
+              </button>
+              {activeDropdown === "style" && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1">
+                  {styles.map((t) => (
+                    <button key={t.id} onClick={() => { setStyle(t.id); setActiveDropdown(null); }} className={`w-full text-left p-2 rounded-lg ${currentStyle === t.id ? "bg-indigo-50 text-indigo-600 font-bold" : ""}`}>{t.name}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <button onClick={() => setActiveDropdown(activeDropdown === "lang" ? null : "lang")} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm shadow-sm ${!currentLanguage ? "bg-amber-50 border-amber-200 text-amber-700 animate-pulse" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"}`}>
+                <span className="text-slate-500 text-[11px] font-bold uppercase">Lang:</span>
+                <span className={`font-bold ${!currentLanguage ? "text-amber-700" : "text-indigo-600"}`}>{currentLanguage || "Select"}</span>
+              </button>
+              {activeDropdown === "lang" && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1">
+                  {languages.map((lang) => (
+                    <button key={lang} onClick={() => { setLanguage(lang); setActiveDropdown(null); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${currentLanguage === lang ? "bg-indigo-600 text-white font-bold" : ""}`}>{lang}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </header>
-
-        <MessageList messages={messages} />
-
-        <MessageInput onSend={onSend} />
+        <MessageList messages={messages} activeConversationId={activeConversationId} />
+        <MessageInput onSend={onSend} disabled={!currentLanguage} />
       </main>
+      <TracePanel conversationId={activeConversationId} />
     </div>
   );
 }
 
-function MessageList({ messages }: { messages: Message[] }) {
+function MessageList({ messages, activeConversationId }: { messages: Message[], activeConversationId: string | null }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
-
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   return (
-    <div className="min-h-0 p-4 overflow-auto">
+    <div className="min-h-0 p-4 overflow-auto scroll-smooth">
       {messages.length === 0 ? (
-        <div className="max-w-xl border border-dashed border-slate-700 rounded-2xl p-5 text-slate-200/90">
-          <div className="font-bold mb-1">대화를 시작하세요</div>
-          <div className="text-sm text-slate-400">
-            왼쪽 목록 선택 후 메시지를 입력하면 됩니다.
+        <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 opacity-60">
+          <div className="max-w-md w-full border border-dashed border-slate-300 rounded-2xl p-6 text-center bg-slate-50">
+            <div className="font-bold text-slate-600 mb-2">대화를 시작하세요</div>
+            <p className="text-sm">상단 옵션을 선택하고 질문을 입력하세요.</p>
           </div>
         </div>
       ) : (
         messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex mb-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-2xl rounded-2xl px-3 py-2 border ${
-                m.role === "user"
-                  ? "bg-white border-slate-200 text-slate-900"
-                  : "bg-slate-100 border-slate-300 text-slate-900"
-              }`}
-            >
-              <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                {m.content}
+          <div key={m.id} className={`flex mb-6 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"} max-w-3xl w-full`}>
+              {m.role === "assistant" && m.status === "streaming" && activeConversationId && <RagStatus conversationId={activeConversationId} />}
+              <div className={`rounded-2xl px-5 py-4 border shadow-sm relative ${m.role === "user" ? "bg-indigo-600 border-indigo-600 text-white rounded-br-none" : "bg-white border-slate-200 text-slate-900 rounded-bl-none"}`}>
+                <div className="text-sm leading-7 prose prose-slate max-w-none dark:prose-invert">
+                  <ReactMarkdown rehypePlugins={[rehypeHighlight]} components={{ code: CodeBlock }}>{m.content}</ReactMarkdown>
+                  {m.status === "streaming" && <span className="inline-block w-2 h-4 align-middle bg-current animate-pulse ml-1 text-indigo-400">|</span>}
+                </div>
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                {m.createdAt}
-              </div>
+              <div className="text-[10px] text-slate-400 mt-1.5 px-1 select-none">{m.createdAt}{m.status === "error" ? " · error" : ""}</div>
             </div>
           </div>
         ))
       )}
-      <div ref={bottomRef} />
+      <div ref={bottomRef} className="h-px" />
     </div>
   );
 }
 
-function MessageInput({ onSend }: { onSend: (text: string) => void }) {
+function MessageInput({ onSend, disabled }: { onSend: (text: string) => void | Promise<void>, disabled: boolean }) {
   const [text, setText] = useState("");
-
-  function submit() {
-    onSend(text);
+  async function submit() {
+    if (disabled || !text.trim()) return;
+    const t = text;
     setText("");
+    await onSend(t);
   }
-
   return (
-    <div className="p-3 flex gap-2 items-end bg-white">
-      <textarea
-        className="flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
-        rows={2}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="메시지를 입력하세요…"
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            submit();
-          }
-        }}
-      />
-      <button
-        onClick={submit}
-        className="px-4 py-2 rounded-xl border border-slate-300 bg-slate-900 text-white hover:bg-slate-800 font-semibold text-sm"
-      >
-        Send
-      </button>
+    <div className={`p-4 bg-white border-t border-slate-100 ${disabled ? "opacity-70" : ""}`}>
+      <div className="relative flex gap-2 items-end max-w-4xl mx-auto">
+        <textarea disabled={disabled} className="flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:bg-slate-100" rows={1} style={{ minHeight: "48px", maxHeight: "120px" }} value={text} onChange={(e) => { setText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`; }} placeholder={disabled ? "언어를 먼저 선택해주세요." : "메시지를 입력하세요..."} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void submit(); } }} />
+        <button disabled={disabled || !text.trim()} onClick={() => void submit()} className="h-12 px-6 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 font-bold text-sm transition-colors">
+          SEND
+        </button>
+      </div>
     </div>
   );
 }
