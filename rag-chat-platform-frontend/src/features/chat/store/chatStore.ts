@@ -11,7 +11,7 @@ type ChatState = {
   setActive: (id: string) => void;
   appendMessage: (conversationId: string, msg: Message) => void;
   patchMessage: (conversationId: string, messageId: string, patch: MessagePatch) => void;
-  patchConversation: (id: string, patch: Partial<Conversation>) => void; // 타입 추가
+  patchConversation: (id: string, patch: Partial<Conversation>) => void;
   currentLanguage: string | null;
   setLanguage: (lang: string) => void;
   currentStyle: string; 
