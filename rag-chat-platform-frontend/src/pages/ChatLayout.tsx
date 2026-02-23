@@ -46,7 +46,7 @@ export default function ChatLayout() {
   const currentStyle = useChatStore((s) => (s as any).currentStyle || "Expert"); 
   const setStyle = useChatStore((s) => (s as any).setStyle);
   const [activeDropdown, setActiveDropdown] = useState<"lang" | "style" | null>(null);
-  const languages = ["Python", "Java", "C++", "JavaScript", "JSP", "React"];
+  const languages = ["Python", "Java", "JavaScript", "C#"];
   const styles = [
     { id: "Expert", name: "🧐 수석 개발자" },
     { id: "Friendly", name: "🌟 친절한 사수" },
