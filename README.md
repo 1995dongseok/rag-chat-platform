@@ -33,6 +33,7 @@ graph TD
     I --> G
     H -->|"Pass or Round 2"| J["Regex Sanitization"]
     J -->|"SSE Streaming"| A
+```
 
 🌟 3. 핵심 엔지니어링 포인트 (Key Features)
   ① LLM-as-a-Judge 기반 자가 검증(Self-Correction) 파이프라인
