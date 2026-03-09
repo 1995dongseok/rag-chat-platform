@@ -22,17 +22,17 @@
 
 ```mermaid
 graph TD
-    A[React Client] -->|HTTP POST (Query, Lang, Style)| B(FastAPI Server)
-    B --> C{Intelligent Routing}
-    C --> D[Embed Query]
-    D --> E[(ChromaDB)]
-    E -->|Retrieve Docs| F[Multi-Reranker <br/> BM25 + Cross-Encoder x3]
-    F -->|Top K Docs| G[GPT-4o Answer Generation]
-    G --> H{LLM-as-a-Judge <br/> Verification}
-    H -->|Fail <br/> Faithfulness < 7| I[Optimize Prompt <br/> Extract Advice]
+    A["React Client"] -->|"HTTP POST (Query, Lang, Style)"| B("FastAPI Server")
+    B --> C{"Intelligent Routing"}
+    C --> D["Embed Query"]
+    D --> E[("ChromaDB")]
+    E -->|"Retrieve Docs"| F["Multi-Reranker <br/> BM25 + Cross-Encoder x3"]
+    F -->|"Top K Docs"| G["GPT-4o Answer Generation"]
+    G --> H{"LLM-as-a-Judge <br/> Verification"}
+    H -->|"Fail <br/> Faithfulness < 7"| I["Optimize Prompt <br/> Extract Advice"]
     I --> G
-    H -->|Pass or Round 2| J[Regex Sanitization]
-    J -->|SSE Streaming| A
+    H -->|"Pass or Round 2"| J["Regex Sanitization"]
+    J -->|"SSE Streaming"| A
 
 🌟 3. 핵심 엔지니어링 포인트 (Key Features)
   ① LLM-as-a-Judge 기반 자가 검증(Self-Correction) 파이프라인
