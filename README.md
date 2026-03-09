@@ -20,7 +20,7 @@
 ---
 
 
-## 🏗 2. 시스템 아키텍처 (Architecture)
+# 🏗 2. 시스템 아키텍처 (Architecture)
 
 ```mermaid
 graph TD
