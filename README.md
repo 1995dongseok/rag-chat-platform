@@ -35,7 +35,7 @@ graph TD
     J -->|"SSE Streaming"| A
 ```
 
-🌟 3. 핵심 엔지니어링 포인트 (Key Features)
+## 🌟 3. 핵심 엔지니어링 포인트 (Key Features)
   ① LLM-as-a-Judge 기반 자가 검증(Self-Correction) 파이프라인
     - 문제: LLM이 주어진 공식 문서(Context)를 무시하고 환각(Hallucination)을 일으키는 현상 발생.
     - 해결: 답변 생성 직후, 프롬프트를 통해 3대 지표(근거성, 관련성, 인용 정확성)를 JSON 형태로 채점하는 심판(Judge) 로직을 백엔드에 통합.
@@ -46,7 +46,7 @@ graph TD
     - UX 최적화: AI의 답변 지연 시간을 해결하기 위해 WebSocket 대신 오버헤드가 적은 **SSE(Server-Sent Events)**를 도입, 토큰이 생성되는 즉시 React 화면에 렌더링.
     - 방어적 프로그래밍: LLM이 마크다운 포맷 규칙을 어기고 URL을 코드 블록으로 감싸 UI를 파괴하는 엣지 케이스(Edge Case) 발견. 이를 방어하기 위해 백엔드 응답 직전 정규식(re.sub)을 활용해 강제로 안전한 마크다운 링크 포맷으로 가공하는 방어망 구축.
 
-🛠 4. 트러블슈팅 (Troubleshooting)
+## 🛠 4. 트러블슈팅 (Troubleshooting)
     ① 한국어 띄어쓰기에 따른 검색 누락(ex. "if 문" vs "if문")
     - 해결 과정 및 엔지니어링 결단 (Solution)
       * 토큰화(Tokenization) 차이로 인해 BM25 등에서 검색 품질이 훼손되는 현상 발견. 이를 방어하기 위해 1차 검색 후 의미론적 문맥을 다시 평가하는 **다중 리랭커(Multi-Reranker)**를 추가 배치하여 False Negative 방어.
@@ -57,16 +57,17 @@ graph TD
     - 해결 과정 및 엔지니어링 결단 (Solution)
       * 품질 기준(Threshold)을 너무 높이면 재시도(Retry)로 인해 스트리밍 응답이 과도하게 지연됨. 1라운드(7점/정확도)와 2라운드(5점/가용성)의 통과 기준을 다르게 설계하여 비즈니스 로직의 최적의 트레이드오프(Trade-off)를 달성함.
 
-👨‍💻 5. 나의 역할 및 기여도 (My Role)본 프로젝트는 4인 팀으로 시작하여 데이터 파싱 및 AI 모델 리서치는 팀원들과 함께 진행하였으며, 리서치 결과를 실제 프로덕트로 엔지니어링하는 과정은 100% 단독으로 수행했습니다.
+## 👨‍💻 5. 나의 역할 및 기여도 (My Role)
+   - 본 프로젝트는 4인 팀으로 시작하여 데이터 파싱 및 AI 모델 리서치는 팀원들과 함께 진행하였으며, 리서치 결과를 실제 프로덕트로 엔지니어링하는 과정은 100% 단독으로 수행했습니다.
     ① 팀의 Colab 기반 AI 실험 코드를 FastAPI 기반의 비동기(Async) 백엔드 아키텍처로 전면 개편.
     ② React, Tailwind CSS, Zustand를 활용한 프론트엔드 UI/UX 기획 및 단독 개발.
     ③ React Markdown 컴포넌트를 커스텀하여 LLM이 출력하는 URL을 사용자 친화적인 Chip 버튼(CustomLink) UI로 렌더링하도록 개선.
 
-🚀 6. 향후 개선 과제 (Future Work)
+## 🚀 6. 향후 개선 과제 (Future Work)
     ① 형태소 분석기 연동: 문서 적재(Ingestion) 및 검색 질의(Query) 단계에 한국어 형태소 분석기(Mecab)를 도입하여 띄어쓰기 및 조사 변형에 대한 검색 강건성(Robustness) 확보.
     ② DB 연동 및 세션 관리: 현재 로컬 상태(Zustand)로 관리되는 채팅 기록을 MySQL 등 RDBMS와 연동하여 영구적인 사용자 세션 관리 기능 추가 예정.
 
-💻 7. Getting Started (실행 방법)
+## 💻 7. Getting Started (실행 방법)
     📋 1. 프로젝트 스펙 (버전 정보) 
     - Frontend: React 19 / Vite / Tailwind CSS / Zustand • Backend: Python 3.10+ / FastAPI 
     - AI/DB: ChromaDB / OpenAI GPT-4o / Cross-Encoder
