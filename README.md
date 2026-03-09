@@ -8,15 +8,17 @@
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-FF6F00?style=for-the-badge&logo=database&logoColor=white)
 ![OpenAI](https://img.shields.io/badge/GPT--4o-412991?style=for-the-badge&logo=openai&logoColor=white)
 
-## 📌 1. 프로젝트 개요
-* **개발 기간**: 2025. 12 ~ 2026. 02 (이스트캠프 AI 휴먼 과정 팀 프로젝트)
-* **담당 역할**: **RAG 백엔드 파이프라인 아키텍처 설계 및 UI/UX 프론트엔드 전담 개발 (개인 기여도 100%)**
-* **핵심 성과**: 
-  * 준 실시간(1초 이내) 단방향 스트리밍(SSE) 응답 구현
-  * Ragas 지표 기반 **자가 검증(Self-Correction)** 로직으로 환각(Hallucination) 99% 차단
-  * BM25 + Cross-Encoder 앙상블 리랭커 도입으로 다국어 기술 문서 검색 정확도 극대화
+# 📌 1. 프로젝트 개요
 
-<br/>
+* **개발 기간**: 2025.12 ~ 2026.02 (이스트캠프 AI 휴먼 과정 팀 프로젝트)
+* **담당 역할**: RAG 백엔드 파이프라인 아키텍처 설계 및 UI/UX 프론트엔드 전담 개발 (개인 기여도 100%)
+* **핵심 성과**
+  * 준 실시간(1초 이내) 단방향 스트리밍(SSE) 응답 구현
+  * Ragas 지표 기반 **Self‑Correction 로직으로 Hallucination 99% 차단**
+  * **BM25 + Cross‑Encoder 앙상블 리랭커** 기반 다국어 기술 문서 검색 정확도 향상
+
+---
+
 
 ## 🏗 2. 시스템 아키텍처 (Architecture)
 
